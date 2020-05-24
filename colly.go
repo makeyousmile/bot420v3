@@ -39,7 +39,7 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 		DialContext: (&net.Dialer{
 			Timeout:   30000 * time.Second,
 			KeepAlive: 30000 * time.Second,
-			DualStack: true,
+			//		DualStack: true,
 		}).DialContext,
 		MaxIdleConns:          0,
 		IdleConnTimeout:       0,
@@ -68,14 +68,21 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 		title := doc.Find("title").Text()
 		Login := strings.Contains(string(r.Body), s.Login)
 		if s.CurrentStage == 3 {
-			hs, city := parse(string(r.Body))
-			if len(hs) > 0 {
-				//
+			hydraShops, city := parse(string(r.Body))
+			if len(hydraShops) > 0 {
+				for _, shop := range hydraShops {
+					log.Print(city)
+					log.Print(shop.Market)
+					log.Print(shop.Title)
+					log.Print(shop.Text)
+					log.Print(shop.Price)
+
+				}
 				if city != "" {
-					WriteToDb(city, hs)
+					WriteToDb(city, hydraShops)
 				}
 
-				//log.Print(hs[0].Market)
+				//log.Print(hydraShops[0].Market)
 			}
 			//c.Visit(link.getJob())
 			return
@@ -109,7 +116,10 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 			log.Print("stage = 1")
 			log.Print(s.CurrentStage)
 			log.Print("visit login stage ")
-			c.Visit("http://hydraruzxpnew4af.onion/login")
+			err := c.Visit("http://hydraruzxpnew4af.onion/login")
+			if err != nil {
+				log.Print(err)
+			}
 
 		} else if Login {
 			s.CurrentStage = 3
@@ -213,7 +223,10 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 
 	}
 	for _, scraper := range scrapers {
-		scraper.collector.Visit("http://hydraruzxpnew4af.onion")
+		err := scraper.collector.Visit("http://hydraruzxpnew4af.onion")
+		if err != nil {
+			log.Print(err)
+		}
 		log.Print(scraper.id)
 	}
 
@@ -248,7 +261,10 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 					log.Print("-----------------------------------------start jobs-----------------------------------------start jobs")
 					//scrapers[msg.id].collector.Visit(links.getJob())
 					for _, job := range links.getJobs() {
-						q.AddURL(job)
+						err := q.AddURL(job)
+						if err != nil {
+							log.Print(err)
+						}
 					}
 					err := q.Run(scrapers[msg.id].collector)
 					if err != nil {
