@@ -14,15 +14,23 @@ func parse(page string) ([]HydraShop, string) {
 		log.Print(err)
 	}
 	cityName := ""
-	selection.Find("option").Each(func(i int, selection *goquery.Selection) {
-		_, exist := selection.Attr("selected")
+	selection.Find("select").Each(func(i int, selection *goquery.Selection) {
+		value, exist := selection.Attr("name")
 		if exist {
-			cityName = strings.TrimSpace(selection.Text())
+			if value == "region_id" {
+				selection.Find("option").Each(func(i int, selection *goquery.Selection) {
+
+					_, exist := selection.Attr("selected")
+					if exist {
+						cityName = strings.TrimSpace(selection.Text())
+					}
+				})
+			}
 		}
 	})
+
 	hs := HydraShop{}
 	hs.Category = strings.TrimSpace(selection.Find("div.selected_category").Text())
-	log.Print("cat" + hs.Category + "*******************************")
 	selection.Find("div.desc").Each(func(i int, selection *goquery.Selection) {
 
 		hs.Title = strings.TrimSpace(selection.Find("div.title").Text())
