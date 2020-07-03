@@ -23,6 +23,7 @@ type MessageToWorker struct {
 var NumberOfWorkers = int(3)
 
 func main() {
+
 	accs := getAccs()
 
 	messageToBot := make(chan MessageToBot)

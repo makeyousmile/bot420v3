@@ -11,12 +11,6 @@ import (
 type Config struct {
 	TelegramBotToken string
 }
-type postForm struct {
-	CapchaData string
-	Capcha     string
-	Login      string
-	Password   string
-}
 
 func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWorker) {
 

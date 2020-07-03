@@ -2,8 +2,8 @@ package main
 
 import (
 	"bytes"
-	"fmt"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/cheggaaa/pb/v3"
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/proxy"
 	"log"
@@ -61,7 +61,7 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 	c.SetProxyFunc(rp)
 
 	c.OnRequest(func(r *colly.Request) {
-		fmt.Println("Visiting", r.URL.String())
+		log.Print(r.URL.String())
 	})
 
 	c.OnResponse(func(r *colly.Response) {
@@ -76,14 +76,7 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 		if s.CurrentStage == 3 {
 			hydraShops, city := parse(string(r.Body))
 			if len(hydraShops) > 0 {
-				for _, shop := range hydraShops {
-					log.Print(city)
-					log.Print(shop.Market)
-					log.Print(shop.Title)
-					log.Print(shop.Text)
-					log.Print(shop.Price)
 
-				}
 				if city != "" {
 					WriteToDb(city, hydraShops)
 				}
@@ -129,7 +122,7 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 
 		} else if Login {
 			s.CurrentStage = 3
-			//log.Print("time to scrab!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+			//log.Print("time to scrap!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 			go func() {
 				msg := MessageToWorker{
 					id:          int(s.id),
@@ -207,7 +200,7 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 
 func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan MessageToWorker, accounts []acc) {
 
-	scrapers := []Scraper{}
+	var scrapers []Scraper
 	links := NewLinks()
 
 	for i, account := range accounts {
@@ -261,9 +254,16 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 				} else if msg.stage == 3 {
 					scrapers[msg.id].CurrentStage = msg.stage
 					log.Print("-----------------------------------------start jobs-----------------------------------------start jobs")
-					for _, job := range links.getJobs() {
-						scrapers[msg.id].collector.Visit(job)
+					lenOfJobs := len(links.getJobs())
+					bar := pb.StartNew(lenOfJobs)
+					for i := 0; i < lenOfJobs; i++ {
+						bar.Increment()
+						err := scrapers[msg.id].collector.Visit(links.getJob())
+						if err != nil {
+							log.Print(err)
+						}
 					}
+					bar.Finish()
 					//scrapers[msg.id].collector.Visit(links.getJob())
 					//for _, job := range links.getJobs() {
 					//	err := q.AddURL(job)

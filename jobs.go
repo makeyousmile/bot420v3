@@ -179,6 +179,7 @@ func (s *Links) getJob() string {
 	s.i++
 	return link
 }
+
 func (s Links) getJobs() []string {
 
 	return s.Jobs
