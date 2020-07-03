@@ -6,7 +6,6 @@ import (
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/proxy"
-	"github.com/gocolly/colly/queue"
 	"log"
 	"net"
 	"net/http"
@@ -33,6 +32,13 @@ type Scraper struct {
 func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWorker chan MessageToWorker) *colly.Collector {
 	//link := NewLinks()
 	c := colly.NewCollector(colly.AllowURLRevisit())
+	//storage := &mongo.Storage{
+	//	Database: "colly",
+	//	URI:      "mongodb://localhost:27017",
+	//}
+	//if err := c.SetStorage(storage); err != nil {
+	//	panic(err)
+	//}
 	c.ID = s.id
 	c.WithTransport(&http.Transport{
 		Proxy: http.ProxyFromEnvironment,
@@ -46,6 +52,7 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 		TLSHandshakeTimeout:   0,
 		ExpectContinueTimeout: 0,
 	})
+
 	// Rotate two socks5 proxies
 	rp, err := proxy.RoundRobinProxySwitcher("socks5://127.0.0.1:9150")
 	if err != nil {
@@ -58,7 +65,6 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 	})
 
 	c.OnResponse(func(r *colly.Response) {
-
 		//	log.Printf("%s\n", bytes.Replace(r.Body, []byte("\n"), nil, -1))
 		//log.Print(string(r.Body)[:])
 		doc, err := goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
@@ -203,10 +209,6 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 
 	scrapers := []Scraper{}
 	links := NewLinks()
-	q, _ := queue.New(
-		2, // Number of consumer threads
-		&queue.InMemoryQueueStorage{MaxSize: 10000}, // Use default queue storage
-	)
 
 	for i, account := range accounts {
 		scraper := Scraper{
@@ -259,17 +261,20 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 				} else if msg.stage == 3 {
 					scrapers[msg.id].CurrentStage = msg.stage
 					log.Print("-----------------------------------------start jobs-----------------------------------------start jobs")
-					//scrapers[msg.id].collector.Visit(links.getJob())
 					for _, job := range links.getJobs() {
-						err := q.AddURL(job)
-						if err != nil {
-							log.Print(err)
-						}
+						scrapers[msg.id].collector.Visit(job)
 					}
-					err := q.Run(scrapers[msg.id].collector)
-					if err != nil {
-						log.Print(err)
-					}
+					//scrapers[msg.id].collector.Visit(links.getJob())
+					//for _, job := range links.getJobs() {
+					//	err := q.AddURL(job)
+					//	if err != nil {
+					//		log.Print(err)
+					//	}
+					//}
+					//err := q.Run(scrapers[msg.id].collector)
+					//if err != nil {
+					//	log.Print(err)
+					//}
 				}
 			}
 		}
