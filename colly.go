@@ -30,6 +30,7 @@ type Scraper struct {
 }
 
 func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWorker chan MessageToWorker) *colly.Collector {
+	proxyList := getProxies()
 	//link := NewLinks()
 	c := colly.NewCollector(colly.AllowURLRevisit())
 	//storage := &mongo.Storage{
@@ -115,7 +116,7 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 			log.Print("stage = 1")
 			log.Print(s.CurrentStage)
 			log.Print("visit login stage ")
-			err := c.Visit("http://hydraruzxpnew4af.onion/login")
+			err := c.Visit(proxyList[1])
 			if err != nil {
 				log.Print(err)
 			}
@@ -199,7 +200,7 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 }
 
 func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan MessageToWorker, accounts []acc) {
-
+	proxyList := getProxies()
 	var scrapers []Scraper
 	links := NewLinks()
 
@@ -218,7 +219,7 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 
 	}
 	for _, scraper := range scrapers {
-		err := scraper.collector.Visit("http://hydraruzxpnew4af.onion")
+		err := scraper.collector.Visit(proxyList[1])
 		if err != nil {
 			log.Print(err)
 		}
@@ -231,7 +232,7 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 			if msg.mtype == 0 {
 				if msg.stage == 0 {
 
-					err := scrapers[msg.id].collector.Post("http://hydraruzxpnew4af.onion/gate", map[string]string{
+					err := scrapers[msg.id].collector.Post(proxyList[1], map[string]string{
 						"captcha":     msg.captcha,
 						"captchaData": msg.captchaData,
 					})
@@ -241,7 +242,7 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 
 				} else if msg.stage == 2 {
 					scrapers[msg.id].CurrentStage = msg.stage
-					err := scrapers[msg.id].collector.Post("http://hydraruzxpnew4af.onion/login", map[string]string{
+					err := scrapers[msg.id].collector.Post(proxyList[1], map[string]string{
 						"captcha":     msg.captcha,
 						"captchaData": msg.captchaData,
 						"login":       scrapers[msg.id].Login,
