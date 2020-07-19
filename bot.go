@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-type Config struct {
+type Cfg struct {
 	TelegramBotToken string
 }
 
@@ -18,12 +18,12 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 
 	file, _ := os.Open("config.json")
 	decoder := json.NewDecoder(file)
-	cfg := Config{}
+	cfg := Cfg{}
 	err := decoder.Decode(&cfg)
 	if err != nil {
 		log.Fatal(err)
 	}
-	//start new Telegram Bot with API token from Config struct var
+	//start new Telegram Bot with API token from Cfg struct var
 	bot, err := tgbotapi.NewBotAPI(cfg.TelegramBotToken)
 	if err != nil {
 		log.Fatal(err)

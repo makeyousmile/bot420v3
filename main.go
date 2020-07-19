@@ -20,7 +20,9 @@ type MessageToWorker struct {
 	stage       int
 }
 
-var NumberOfWorkers = int(3)
+var NumberOfWorkers = 3
+
+var hydraProxy = getProxies()[3]
 
 func main() {
 
