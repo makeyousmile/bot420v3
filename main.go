@@ -20,13 +20,13 @@ type MessageToWorker struct {
 	stage       int
 }
 
-var NumberOfWorkers = 3
-
-var hydraProxy = getProxies()[3]
+var (
+	accs            = getAccs()
+	NumberOfWorkers = len(accs)
+	hydraProxy      = getProxies()[1]
+)
 
 func main() {
-
-	accs := getAccs()
 
 	messageToBot := make(chan MessageToBot)
 	messageToWorker := make(chan MessageToWorker)

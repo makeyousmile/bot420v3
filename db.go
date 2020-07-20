@@ -39,12 +39,12 @@ func ConnectToDb() (context.Context, *mongo.Client) {
 }
 func WriteToDb(cityName string, shops []HydraShop) {
 	ctx, client := ConnectToDb()
-	collection := client.Database("bot420").Collection(cityName)
+	collectionBot420 := client.Database("bot420").Collection(cityName)
 
 	ctx, _ = context.WithTimeout(context.Background(), 5*time.Second)
 
 	for _, shop := range shops {
-		res, err := collection.InsertOne(ctx, shop)
+		res, err := collectionBot420.InsertOne(ctx, shop)
 		if err != nil {
 			log.Print(err)
 		}

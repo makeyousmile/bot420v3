@@ -89,6 +89,7 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 					mtype:       0,
 					stage:       cash[i].stage,
 				}
+				log.Print(cash)
 				messagesToWorker <- mess
 				//log.Print(workers[i].Login)
 				//log.Print(workers[i].Pass)

@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"github.com/PuerkitoBio/goquery"
-	"github.com/cheggaaa/pb/v3"
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/proxy"
 	"log"
@@ -62,7 +61,7 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 	c.SetProxyFunc(rp)
 
 	c.OnRequest(func(r *colly.Request) {
-		log.Print(r.URL.String())
+		//	fmt.Println("Visiting", r.URL)
 	})
 
 	c.OnResponse(func(r *colly.Response) {
@@ -116,7 +115,7 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 			log.Print("stage = 1")
 			log.Print(s.CurrentStage)
 			log.Print("visit login stage ")
-			err := c.Visit(hydraProxy)
+			err := c.Visit(hydraProxy + "login")
 			if err != nil {
 				log.Print(err)
 			}
@@ -125,6 +124,14 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 			s.CurrentStage = 3
 			//log.Print("time to scrap!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 			go func() {
+				msgToBot := MessageToBot{
+					id:          int(s.id),
+					captcha:     "",
+					captchaData: "",
+					text:        "time to scrap!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+					stage:       0,
+				}
+				messageToBot <- msgToBot
 				msg := MessageToWorker{
 					id:          int(s.id),
 					captcha:     "",
@@ -232,7 +239,7 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 			if msg.mtype == 0 {
 				if msg.stage == 0 {
 
-					err := scrapers[msg.id].collector.Post(hydraProxy, map[string]string{
+					err := scrapers[msg.id].collector.Post(hydraProxy+"gate", map[string]string{
 						"captcha":     msg.captcha,
 						"captchaData": msg.captchaData,
 					})
@@ -242,7 +249,8 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 
 				} else if msg.stage == 2 {
 					scrapers[msg.id].CurrentStage = msg.stage
-					err := scrapers[msg.id].collector.Post(hydraProxy, map[string]string{
+					log.Print(hydraProxy + "gate--------------------------------")
+					err := scrapers[msg.id].collector.Post(hydraProxy+"login", map[string]string{
 						"captcha":     msg.captcha,
 						"captchaData": msg.captchaData,
 						"login":       scrapers[msg.id].Login,
@@ -253,18 +261,26 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 					}
 
 				} else if msg.stage == 3 {
-					scrapers[msg.id].CurrentStage = msg.stage
-					log.Print("-----------------------------------------start jobs-----------------------------------------start jobs")
-					lenOfJobs := len(links.getJobs())
-					bar := pb.StartNew(lenOfJobs)
-					for i := 0; i < lenOfJobs; i++ {
-						bar.Increment()
-						err := scrapers[msg.id].collector.Visit(links.getJob())
-						if err != nil {
-							log.Print(err)
+					id := msg.id
+					go func() {
+						scrapers[id].CurrentStage = msg.stage
+						log.Print("-----------------------------------------start jobs-----------------------------------------start jobs")
+						lenOfJobs := len(links.getJobs())
+						//	bar := pb.StartNew(lenOfJobs)
+						for i := 0; i < lenOfJobs; i++ {
+							//	bar.Increment()
+
+							job := links.getJob()
+							log.Printf("wrk:%d visit: %s", id, job)
+							err := scrapers[id].collector.Visit(job)
+							log.Print(id)
+							if err != nil {
+								log.Print(err)
+							}
 						}
-					}
-					bar.Finish()
+						//bar.Finish()
+					}()
+
 					//scrapers[msg.id].collector.Visit(links.getJob())
 					//for _, job := range links.getJobs() {
 					//	err := q.AddURL(job)
