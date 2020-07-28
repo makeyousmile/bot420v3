@@ -79,7 +79,8 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 
 				if city != "" {
 					log.Print(r.Headers.Get("region_id") + "===================================================")
-					WriteToDb(city+hydraShops[0].Category, hydraShops)
+					city = TrimCollName(city)
+					WriteToDb(city+":"+hydraShops[0].Category, hydraShops)
 				}
 
 				//log.Print(hydraShops[0].Market)
@@ -295,4 +296,9 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 			}
 		}
 	}(scrapers)
+}
+
+func TrimCollName(collName string) string {
+	name := strings.Split(collName, " ")
+	return name[0]
 }
