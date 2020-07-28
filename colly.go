@@ -78,7 +78,8 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 			if len(hydraShops) > 0 {
 
 				if city != "" {
-					WriteToDb(city, hydraShops)
+					log.Print(r.Headers.Get("region_id") + "===================================================")
+					WriteToDb(city+hydraShops[0].Category, hydraShops)
 				}
 
 				//log.Print(hydraShops[0].Market)
@@ -249,7 +250,6 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 
 				} else if msg.stage == 2 {
 					scrapers[msg.id].CurrentStage = msg.stage
-					log.Print(hydraProxy + "gate--------------------------------")
 					err := scrapers[msg.id].collector.Post(hydraProxy+"login", map[string]string{
 						"captcha":     msg.captcha,
 						"captchaData": msg.captchaData,
@@ -273,7 +273,6 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 							job := links.getJob()
 							log.Printf("wrk:%d visit: %s", id, job)
 							err := scrapers[id].collector.Visit(job)
-							log.Print(id)
 							if err != nil {
 								log.Print(err)
 							}
