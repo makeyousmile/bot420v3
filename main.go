@@ -23,7 +23,7 @@ type MessageToWorker struct {
 var (
 	accs            = getAccs()
 	NumberOfWorkers = len(accs)
-	hydraProxy      = getProxies()[1]
+	hydraProxy      = getProxies()[0]
 )
 
 func main() {
@@ -34,5 +34,5 @@ func main() {
 	go StartBot(messageToBot, messageToWorker)
 	go StartCollyWorkers(messageToBot, messageToWorker, accs)
 
-	time.Sleep(10000 * time.Second)
+	time.Sleep(24 * time.Hour)
 }

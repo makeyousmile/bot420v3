@@ -43,8 +43,8 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 	c.WithTransport(&http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
-			Timeout:   30000 * time.Second,
-			KeepAlive: 30000 * time.Second,
+			Timeout:   60 * time.Second,
+			KeepAlive: 60 * time.Second,
 			//		DualStack: true,
 		}).DialContext,
 		MaxIdleConns:          0,
@@ -54,7 +54,7 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 	})
 
 	// Rotate two socks5 proxies
-	rp, err := proxy.RoundRobinProxySwitcher("socks5://127.0.0.1:9150")
+	rp, err := proxy.RoundRobinProxySwitcher("socks5://165.232.72.180:9150")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -126,14 +126,7 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 			s.CurrentStage = 3
 			//log.Print("time to scrap!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
 			go func() {
-				msgToBot := MessageToBot{
-					id:          int(s.id),
-					captcha:     "",
-					captchaData: "",
-					text:        "time to scrap!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
-					stage:       0,
-				}
-				messageToBot <- msgToBot
+
 				msg := MessageToWorker{
 					id:          int(s.id),
 					captcha:     "",
@@ -262,22 +255,45 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 					}
 
 				} else if msg.stage == 3 {
+					msgToBot := MessageToBot{
+						id:          msg.id,
+						captcha:     "",
+						captchaData: "",
+						text:        "time to scrap!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!",
+						stage:       0,
+					}
+					messageToBot <- msgToBot
 					id := msg.id
 					go func() {
 						scrapers[id].CurrentStage = msg.stage
-						log.Print("-----------------------------------------start jobs-----------------------------------------start jobs")
-						lenOfJobs := len(links.getJobs())
-						//	bar := pb.StartNew(lenOfJobs)
-						for i := 0; i < lenOfJobs; i++ {
-							//	bar.Increment()
-
+						for true {
 							job := links.getJob()
 							log.Printf("wrk:%d visit: %s", id, job)
 							err := scrapers[id].collector.Visit(job)
 							if err != nil {
-								log.Print(err)
+								msgToBot := MessageToBot{
+									id:          id,
+									captcha:     "",
+									captchaData: "",
+									text:        err.Error(),
+									stage:       0,
+								}
+								messageToBot <- msgToBot
 							}
 						}
+						log.Print("-----------------------------------------start jobs-----------------------------------------start jobs")
+						//lenOfJobs := len(links.getJobs())
+						////	bar := pb.StartNew(lenOfJobs)
+						//for i := 0; i < lenOfJobs; i++ {
+						//	//	bar.Increment()
+						//
+						//	job := links.getJob()
+						//	log.Printf("wrk:%d visit: %s", id, job)
+						//	err := scrapers[id].collector.Visit(job)
+						//	if err != nil {
+						//		log.Print(err)
+						//	}
+						//}
 						//bar.Finish()
 					}()
 
