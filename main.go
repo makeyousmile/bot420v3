@@ -23,7 +23,7 @@ type MessageToWorker struct {
 var (
 	accs            = getAccs()
 	NumberOfWorkers = len(accs)
-	hydraProxy      = getProxies()[0]
+	hydraProxy      = getProxies()[2]
 )
 
 func main() {

@@ -32,6 +32,7 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 
 	//link := NewLinks()
 	c := colly.NewCollector(colly.AllowURLRevisit())
+	c.UserAgent = "User Agent 3.57 11.86 Mozilla/5.0 (Windows NT 6.1; rv:60.0) Gecko/20100101 Firefox/60.0"
 	//storage := &mongo.Storage{
 	//	Database: "colly",
 	//	URI:      "mongodb://localhost:27017",
@@ -65,20 +66,20 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 	})
 
 	c.OnResponse(func(r *colly.Response) {
-		//	log.Printf("%s\n", bytes.Replace(r.Body, []byte("\n"), nil, -1))
+		log.Printf("%s\n", bytes.Replace(r.Body, []byte("\n"), nil, -1))
 		//log.Print(string(r.Body)[:])
 		doc, err := goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
 		if err != nil {
 			log.Print(err)
 		}
 		title := doc.Find("title").Text()
-		Login := strings.Contains(string(r.Body), s.Login)
+		Login := strings.Contains(string(r.Body), "Мои заказы")
 		if s.CurrentStage == 3 {
 			hydraShops, city := parse(string(r.Body))
 			if len(hydraShops) > 0 {
 
 				if city != "" {
-					log.Print(r.Headers.Get("region_id") + "===================================================")
+					//	log.Print(r.Headers.Get("region_id") + "===================================================")
 					city = TrimCollName(city)
 					WriteToDb(city+":"+hydraShops[0].Category, hydraShops)
 				}
@@ -269,6 +270,7 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 						for true {
 							job := links.getJob()
 							log.Printf("wrk:%d visit: %s", id, job)
+							time.Sleep(20 * time.Second)
 							err := scrapers[id].collector.Visit(job)
 							if err != nil {
 								msgToBot := MessageToBot{
