@@ -4,12 +4,22 @@ import (
 	"time"
 )
 
+type HydraShop struct {
+	Category   string
+	Title      string
+	Text       string
+	Market     string
+	Price      string
+	UpdateTime time.Time
+}
+
 type MessageToBot struct {
 	id          int
 	captcha     string
 	captchaData string
 	text        string
 	stage       int
+	hs          HydraShop
 }
 type MessageToWorker struct {
 	id          int
@@ -23,7 +33,7 @@ type MessageToWorker struct {
 var (
 	accs            = getAccs()
 	NumberOfWorkers = len(accs)
-	hydraProxy      = getProxies()[2]
+	hydraProxy      = getProxies()[0]
 )
 
 func main() {
