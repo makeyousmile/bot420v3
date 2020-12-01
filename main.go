@@ -19,7 +19,7 @@ type MessageToBot struct {
 	captchaData string
 	text        string
 	stage       int
-	hs          HydraShop
+	hs          []HydraShop
 }
 type MessageToWorker struct {
 	id          int

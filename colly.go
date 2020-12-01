@@ -88,6 +88,7 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 					msg := MessageToBot{
 						id:    int(c.ID),
 						stage: s.CurrentStage,
+						hs:    hydraShops,
 					}
 					messageToBot <- msg
 

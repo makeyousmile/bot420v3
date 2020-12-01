@@ -89,7 +89,6 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 					mtype:       0,
 					stage:       cash[i].stage,
 				}
-				log.Print(cash)
 				messagesToWorker <- mess
 				//log.Print(workers[i].Login)
 				//log.Print(workers[i].Pass)
@@ -122,8 +121,13 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 			bot.Send(msg)
 		}
 
-		if update.Message.Command() == "test" {
-			log.Print(update.Message.CommandArguments())
+		if update.Message.Command() == "go" {
+			mess := MessageToWorker{
+				id:    7,
+				text:  "",
+				mtype: 2,
+			}
+			messagesToWorker <- mess
 		}
 	}
 }
