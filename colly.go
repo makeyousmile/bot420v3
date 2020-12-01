@@ -74,6 +74,9 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 		}
 		title := doc.Find("title").Text()
 		Login := strings.Contains(string(r.Body), "Мои заказы")
+		if strings.Contains(string(r.Body), "Забыли пароль?") {
+			s.CurrentStage = 1
+		}
 		if s.CurrentStage == 3 {
 			hydraShops, city := parse(string(r.Body))
 			if len(hydraShops) > 0 {
@@ -81,7 +84,13 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 				if city != "" {
 					//	log.Print(r.Headers.Get("region_id") + "===================================================")
 					city = TrimCollName(city)
-					WriteToDb(city+":"+hydraShops[0].Category, hydraShops)
+					//WriteToDb(city+":"+hydraShops[0].Category, hydraShops)
+					msg := MessageToBot{
+						id:    int(c.ID),
+						stage: s.CurrentStage,
+					}
+					messageToBot <- msg
+
 				}
 
 				//log.Print(hydraShops[0].Market)
@@ -270,7 +279,9 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 						for true {
 							job := links.getJob()
 							log.Printf("wrk:%d visit: %s", id, job)
-							time.Sleep(20 * time.Second)
+
+							time.Sleep(17 * time.Second)
+
 							err := scrapers[id].collector.Visit(job)
 							if err != nil {
 								msgToBot := MessageToBot{

@@ -10,15 +10,6 @@ import (
 )
 import "go.mongodb.org/mongo-driver/mongo"
 
-type HydraShop struct {
-	Category   string
-	Title      string
-	Text       string
-	Market     string
-	Price      string
-	UpdateTime time.Time
-}
-
 func ConnectToDb() (context.Context, *mongo.Client) {
 	client, err := mongo.NewClient(options.Client().ApplyURI("mongodb://localhost:27017"))
 	if err != nil {
