@@ -19,6 +19,7 @@ type CurrentValues struct {
 }
 type Scraper struct {
 	id           uint32
+	userID       int64
 	collector    *colly.Collector
 	CurrentStage int
 	Login        string

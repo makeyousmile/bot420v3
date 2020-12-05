@@ -20,6 +20,7 @@ type MessageToBot struct {
 	text        string
 	stage       int
 	hs          []HydraShop
+	user        botUser
 }
 type MessageToWorker struct {
 	id          int
@@ -28,6 +29,7 @@ type MessageToWorker struct {
 	text        string
 	mtype       int
 	stage       int
+	user        botUser
 }
 
 var (
