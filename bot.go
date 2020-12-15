@@ -29,6 +29,10 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 	if err != nil {
 		log.Fatal(err)
 	}
+	bot.Debug = false
+	log.Printf("Authorized on account %s", bot.Self.UserName)
+	ucfg := tgbotapi.NewUpdate(0)
+	ucfg.Timeout = 60
 
 	cash := map[int]MessageToBot{}
 
@@ -55,14 +59,25 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 				photo.Caption = strconv.FormatUint(uint64(msg.id), 10)
 				bot.Send(photo)
 			}
+			if msg.stage == 3 {
+				log.Print("msg.stage == 3")
+				answer := ""
+				for _, market := range msg.hs {
+					if market.Price != "" {
+						m := "<b>" + market.Title + "</b>\n " + market.Price + "\n\n"
+						answer += m
+					}
+				}
+				msg := tgbotapi.NewMessage(msg.user.id, answer)
+				msg.ParseMode = "HTML"
+				bot.Send(msg)
+			}
+			if msg.user.id != 0 {
+				log.Print(msg.user.id != 0)
+			}
 
 		}
 	}()
-
-	bot.Debug = false
-	log.Printf("Authorized on account %s", bot.Self.UserName)
-	ucfg := tgbotapi.NewUpdate(0)
-	ucfg.Timeout = 60
 
 	updates, err := bot.GetUpdatesChan(ucfg)
 	for update := range updates {
@@ -125,6 +140,7 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 			}
 
 			if update.Message.Command() == "go" {
+				log.Print("go")
 				var numericKeyboard tgbotapi.InlineKeyboardMarkup
 				for i, city := range cityNames {
 					row := tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(city, cityValues[i]))
@@ -134,22 +150,11 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Выберите город")
 				msg.ReplyMarkup = numericKeyboard
 				bot.Send(msg)
+				log.Print("hey")
 			}
 		}
 		if update.CallbackQuery != nil {
 			id := update.CallbackQuery.Message.Chat.ID
-			if users[id].cat != "" {
-				log.Print("full info")
-				editedMsg := tgbotapi.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, users[id].city)
-				bot.Send(editedMsg)
-				//edit body
-				var CatKeyboard tgbotapi.InlineKeyboardMarkup
-				editedMsg2 := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, CatKeyboard)
-				bot.Send(editedMsg2)
-				break
-			} else {
-
-			}
 			bot.AnswerCallbackQuery(tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data))
 			data := update.CallbackQuery.Data
 
@@ -162,15 +167,18 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 					cat:  data,
 					id:   id,
 				}
-
 				editedMsg := tgbotapi.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, users[id].city+users[id].cat)
 				bot.Send(editedMsg)
+				mess := MessageToWorker{
+					mtype: 1,
+					user:  users[id],
+					stage: 10,
+				}
+				messagesToWorker <- mess
 			}
 			log.Print(users)
 
-			if users[id].cat != "" {
-				break
-			} else {
+			if users[id].cat == "" {
 				var CatKeyboard tgbotapi.InlineKeyboardMarkup
 
 				for i, cat := range catNames {

@@ -19,7 +19,7 @@ type CurrentValues struct {
 }
 type Scraper struct {
 	id           uint32
-	userID       int64
+	userID       *int64
 	collector    *colly.Collector
 	CurrentStage int
 	Login        string
@@ -67,6 +67,8 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 	})
 
 	c.OnResponse(func(r *colly.Response) {
+		log.Print(*s.userID)
+		//log.Print(s.CurrentStage)
 		log.Printf("%s\n", bytes.Replace(r.Body, []byte("\n"), nil, -1))
 		//log.Print(string(r.Body)[:])
 		doc, err := goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
@@ -90,7 +92,9 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 						id:    int(c.ID),
 						stage: s.CurrentStage,
 						hs:    hydraShops,
+						user:  botUser{id: *s.userID},
 					}
+					log.Print(hydraShops)
 					messageToBot <- msg
 
 				}
@@ -216,7 +220,7 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan MessageToWorker, accounts []acc) {
 
 	var scrapers []Scraper
-	links := NewLinks()
+	//	links := NewLinks()
 
 	for i, account := range accounts {
 		scraper := Scraper{
@@ -226,8 +230,12 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 			Pass:         account.Pass,
 			Job:          CurrentValues{},
 			captchaData:  "",
+			userID:       new(int64),
 		}
 		scraper.collector = scraper.StartCollyWorker(messageToBot, messageToWorker)
+		log.Print("scraper")
+		log.Print(scraper.id)
+		log.Print(scraper.userID)
 
 		scrapers = append(scrapers, scraper)
 
@@ -240,7 +248,7 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 		log.Print(scraper.id)
 	}
 
-	go func(s []Scraper) {
+	go func(s *[]Scraper) {
 		for msg := range messageToWorker {
 
 			if msg.mtype == 0 {
@@ -275,58 +283,22 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 						stage:       0,
 					}
 					messageToBot <- msgToBot
-					id := msg.id
-					go func() {
-						scrapers[id].CurrentStage = msg.stage
-						for true {
-							job := links.getJob()
-							log.Printf("wrk:%d visit: %s", id, job)
 
-							time.Sleep(17 * time.Second)
-
-							err := scrapers[id].collector.Visit(job)
-							if err != nil {
-								msgToBot := MessageToBot{
-									id:          id,
-									captcha:     "",
-									captchaData: "",
-									text:        err.Error(),
-									stage:       0,
-								}
-								messageToBot <- msgToBot
-							}
-						}
-						log.Print("-----------------------------------------start jobs-----------------------------------------start jobs")
-						//lenOfJobs := len(links.getJobs())
-						////	bar := pb.StartNew(lenOfJobs)
-						//for i := 0; i < lenOfJobs; i++ {
-						//	//	bar.Increment()
-						//
-						//	job := links.getJob()
-						//	log.Printf("wrk:%d visit: %s", id, job)
-						//	err := scrapers[id].collector.Visit(job)
-						//	if err != nil {
-						//		log.Print(err)
-						//	}
-						//}
-						//bar.Finish()
-					}()
-
-					//scrapers[msg.id].collector.Visit(links.getJob())
-					//for _, job := range links.getJobs() {
-					//	err := q.AddURL(job)
-					//	if err != nil {
-					//		log.Print(err)
-					//	}
-					//}
-					//err := q.Run(scrapers[msg.id].collector)
-					//if err != nil {
-					//	log.Print(err)
-					//}
+				}
+			} else {
+				if msg.mtype == 1 {
+					*scrapers[0].userID = msg.user.id
+					scrapers[0].CurrentStage = 10
+					log.Print(scrapers[0].userID)
+					log.Print(*scrapers[0].userID)
+					job := hydraProxy + "catalog/" + msg.user.cat + "?query=&region_id=" + msg.user.city + "&subregion_id=0&price%5Bmin%5D=&price%5Bmax%5D=&unit=g&weight%5Bmin%5D=&weight%5Bmax%5D=&type=momental"
+					scrapers[0].collector.Visit(job)
+					log.Print(job)
 				}
 			}
+
 		}
-	}(scrapers)
+	}(&scrapers)
 }
 
 func TrimCollName(collName string) string {
