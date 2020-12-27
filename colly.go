@@ -75,8 +75,7 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 		if err != nil {
 			log.Print(err)
 		}
-		title := doc.Find("title").Text()
-		Login := strings.Contains(string(r.Body), "Мои заказы")
+
 		if strings.Contains(string(r.Body), "Забыли пароль?") {
 			s.CurrentStage = 1
 		}
@@ -104,7 +103,9 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 			//c.Visit(link.getJob())
 			return
 		}
-		if s.CurrentStage == 0 && title == "Вы не робот?" {
+		Login := strings.Contains(string(r.Body), "Мои заказы")
+		title := doc.Find("title").Text()
+		if s.CurrentStage == 0 || title == "Вы не робот?" {
 			file, exist := doc.Find("img").Attr("src")
 			if exist {
 				base64toJpg(file, strconv.FormatUint(uint64(c.ID), 10)+".jpeg")
