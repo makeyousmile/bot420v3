@@ -1,0 +1,3 @@
+#!/bin/bash
+killall -ir bot420v3
+nohup ./bot420v3 &

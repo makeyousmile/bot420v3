@@ -37,27 +37,11 @@ func checkProxies(proxies []string) []string {
 
 	// Rotate two socks5 proxies
 	for _, addr := range proxies {
-		c := startColly()
-		rp, err := proxy.RoundRobinProxySwitcher(addr)
-		if err != nil {
-			log.Fatal(err)
+		if checkProxy(addr) {
+			log.Print("add: " + addr)
+			workProxies = append(workProxies, addr)
 		}
-		c.SetProxyFunc(rp)
 
-		c.OnRequest(func(r *colly.Request) {
-			//	fmt.Println("Visiting", r.URL)
-		})
-
-		c.OnResponse(func(r *colly.Response) {
-			doc, err := goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
-			if err != nil {
-				log.Print(err)
-			}
-			title := doc.Find("title").Text()
-			if title == "Вы не робот?" {
-				workProxies = append(workProxies, addr)
-			}
-		})
 	}
 
 	return workProxies
@@ -79,4 +63,42 @@ func startColly() *colly.Collector {
 		ExpectContinueTimeout: 0,
 	})
 	return c
+}
+func checkProxy(addr string) bool {
+	var check bool
+	c := startColly()
+	rp, err := proxy.RoundRobinProxySwitcher("socks5://165.232.72.180:9150")
+	if err != nil {
+		log.Fatal(err)
+	}
+	c.SetProxyFunc(rp)
+
+	c.OnRequest(func(r *colly.Request) {
+		//	fmt.Println("Visiting", r.URL)
+	})
+
+	c.OnResponse(func(r *colly.Response) {
+		doc, err := goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
+		if err != nil {
+			log.Print(err)
+		}
+		title := doc.Find("title").Text()
+		if title == "Вы не робот?" {
+			log.Print("send: true")
+			check = true
+		} else {
+			log.Print("send: false")
+			check = false
+		}
+	})
+	log.Print("check1")
+	c.Async = true
+	err = c.Visit(addr)
+	log.Print("check2")
+	if err != nil {
+		log.Print(err)
+	}
+	c.Wait()
+	log.Print(check)
+	return check
 }

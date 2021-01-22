@@ -293,7 +293,8 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 					log.Print(scrapers[0].userID)
 					log.Print(*scrapers[0].userID)
 					job := hydraProxy + "catalog/" + msg.user.cat + "?query=&region_id=" + msg.user.city + "&subregion_id=0&price%5Bmin%5D=&price%5Bmax%5D=&unit=g&weight%5Bmin%5D=&weight%5Bmax%5D=&type=momental"
-					scrapers[0].collector.Visit(job)
+					err := scrapers[0].collector.Visit(job)
+					log.Print(err)
 					log.Print(job)
 				}
 			}
