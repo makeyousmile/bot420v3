@@ -154,7 +154,7 @@ func NewLinks() *Links {
 		for j := 0; j < len(cityValues); j++ {
 			cat := catValues[i]
 			city := cityValues[j]
-			job := hydraProxy + "catalog/" + cat + "?query=&region_id=" + city + "&subregion_id=0&price%5Bmin%5D=&price%5Bmax%5D=&unit=g&weight%5Bmin%5D=&weight%5Bmax%5D=&type=momental"
+			job := cfg.Proxy + "catalog/" + cat + "?query=&region_id=" + city + "&subregion_id=0&price%5Bmin%5D=&price%5Bmax%5D=&unit=g&weight%5Bmin%5D=&weight%5Bmax%5D=&type=momental"
 			jobs[links.i] = job
 			values[links.i].catValue = catValues[i]
 			values[links.i].catNames = catNames[i]

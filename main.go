@@ -31,20 +31,30 @@ type MessageToWorker struct {
 	stage       int
 	user        botUser
 }
+type Cfg struct {
+	Accounts        []acc
+	Proxy           string
+	NumberOfWorkers int
+	messageToBot    chan MessageToBot
+	messageToWorker chan MessageToWorker
+}
 
 var (
-	accs            = getAccs()
-	NumberOfWorkers = len(accs)
-	hydraProxy      = checkProxies(getProxies())[0]
+	cfg = &Cfg{}
 )
 
+func init() {
+	cfg.messageToBot = make(chan MessageToBot, 10)
+	cfg.messageToWorker = make(chan MessageToWorker)
+	cfg.Accounts = getAccs()
+	cfg.Proxy = checkProxies(getProxies())[0]
+	cfg.NumberOfWorkers = len(getAccs())
+
+}
 func main() {
 
-	messageToBot := make(chan MessageToBot)
-	messageToWorker := make(chan MessageToWorker)
-
-	go StartBot(messageToBot, messageToWorker)
-	go StartCollyWorkers(messageToBot, messageToWorker, accs)
+	go StartBot(cfg.messageToBot, cfg.messageToWorker)
+	go StartCollyWorkers(cfg.messageToBot, cfg.messageToWorker)
 
 	time.Sleep(24 * time.Hour)
 }

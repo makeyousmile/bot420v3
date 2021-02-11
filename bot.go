@@ -8,7 +8,7 @@ import (
 	"strconv"
 )
 
-type Cfg struct {
+type BotCfg struct {
 	TelegramBotToken string
 }
 
@@ -19,13 +19,13 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 
 	file, _ := os.Open("config.json")
 	decoder := json.NewDecoder(file)
-	cfg := Cfg{}
-	err := decoder.Decode(&cfg)
+	botcfg := BotCfg{}
+	err := decoder.Decode(&botcfg)
 	if err != nil {
 		log.Fatal(err)
 	}
 	//start new Telegram Bot with API token from Cfg struct var
-	bot, err := tgbotapi.NewBotAPI(cfg.TelegramBotToken)
+	bot, err := tgbotapi.NewBotAPI(botcfg.TelegramBotToken)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -62,9 +62,9 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 			if msg.stage == 3 {
 				log.Print("msg.stage == 3")
 				answer := ""
-				for _, market := range msg.hs {
+				for i, market := range msg.hs {
 					if market.Price != "" {
-						m := "<b>" + market.Title + "</b>\n " + market.Price + "\n\n"
+						m := strconv.Itoa(i+1) + ". <b>" + market.Title + "</b>\n " + market.Price + "\n\n"
 						answer += m
 					}
 				}
@@ -90,7 +90,7 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 			typing := tgbotapi.NewChatAction(update.Message.Chat.ID, "typing")
 			bot.Send(typing)
 
-			for i := 0; i < NumberOfWorkers; i++ {
+			for i := 0; i < cfg.NumberOfWorkers; i++ {
 				if update.Message.Command() == strconv.Itoa(i) {
 
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, strconv.Itoa(i))
@@ -158,16 +158,17 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 			bot.AnswerCallbackQuery(tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data))
 			data := update.CallbackQuery.Data
 
-			if users[id].city == "" {
-				users[id] = botUser{city: data}
+			if users[id].cityValues == "" {
+				users[id] = botUser{cityValues: data}
 
 			} else {
 				users[id] = botUser{
-					city: users[id].city,
-					cat:  data,
-					id:   id,
+					cityValues: users[id].cityValues,
+					catValues:  data,
+					id:         id,
 				}
-				editedMsg := tgbotapi.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, users[id].city+users[id].cat)
+				//editedMsg := tgbotapi.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, users[id].cityValues+users[id].catValues)
+				editedMsg := tgbotapi.NewDeleteMessage(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID)
 				bot.Send(editedMsg)
 				mess := MessageToWorker{
 					mtype: 1,
@@ -178,7 +179,7 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 			}
 			log.Print(users)
 
-			if users[id].cat == "" {
+			if users[id].catValues == "" {
 				var CatKeyboard tgbotapi.InlineKeyboardMarkup
 
 				for i, cat := range catNames {

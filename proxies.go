@@ -37,8 +37,12 @@ func checkProxies(proxies []string) []string {
 
 	// Rotate two socks5 proxies
 	for _, addr := range proxies {
-		if checkProxy(addr) {
-			log.Print("add: " + addr)
+		check, responseTime := checkProxy(addr)
+		if check {
+			msg := MessageToBot{
+				text: addr + "" + responseTime.String(),
+			}
+			cfg.messageToBot <- msg
 			workProxies = append(workProxies, addr)
 		}
 
@@ -64,7 +68,7 @@ func startColly() *colly.Collector {
 	})
 	return c
 }
-func checkProxy(addr string) bool {
+func checkProxy(addr string) (bool, time.Duration) {
 	var check bool
 	c := startColly()
 	rp, err := proxy.RoundRobinProxySwitcher("socks5://165.232.72.180:9150")
@@ -92,13 +96,19 @@ func checkProxy(addr string) bool {
 		}
 	})
 	log.Print("check1")
-	c.Async = true
+	c.Async = false
+	t1 := time.Now()
 	err = c.Visit(addr)
-	log.Print("check2")
+	t2 := time.Now().Sub(t1)
+	log.Print(t2)
 	if err != nil {
 		log.Print(err)
+		msg := MessageToBot{
+			text: err.Error(),
+		}
+		cfg.messageToBot <- msg
 	}
 	c.Wait()
 	log.Print(check)
-	return check
+	return check, t2
 }

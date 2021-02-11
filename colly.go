@@ -86,7 +86,7 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 				if city != "" {
 					//	log.Print(r.Headers.Get("region_id") + "===================================================")
 					city = TrimCollName(city)
-					//WriteToDb(city+":"+hydraShops[0].Category, hydraShops)
+					//WriteToDb(cityValues+":"+hydraShops[0].Category, hydraShops)
 					msg := MessageToBot{
 						id:    int(c.ID),
 						stage: s.CurrentStage,
@@ -134,7 +134,7 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 			log.Print("stage = 1")
 			log.Print(s.CurrentStage)
 			log.Print("visit login stage ")
-			err := c.Visit(hydraProxy + "login")
+			err := c.Visit(cfg.Proxy + "login")
 			if err != nil {
 				log.Print(err)
 			}
@@ -218,12 +218,12 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 	return c
 }
 
-func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan MessageToWorker, accounts []acc) {
+func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan MessageToWorker) {
 
 	var scrapers []Scraper
 	//	links := NewLinks()
 
-	for i, account := range accounts {
+	for i, account := range cfg.Accounts {
 		scraper := Scraper{
 			id:           uint32(i),
 			CurrentStage: 0,
@@ -242,7 +242,7 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 
 	}
 	for _, scraper := range scrapers {
-		err := scraper.collector.Visit(hydraProxy)
+		err := scraper.collector.Visit(cfg.Proxy)
 		if err != nil {
 			log.Print(err)
 		}
@@ -255,7 +255,7 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 			if msg.mtype == 0 {
 				if msg.stage == 0 {
 
-					err := scrapers[msg.id].collector.Post(hydraProxy+"gate", map[string]string{
+					err := scrapers[msg.id].collector.Post(cfg.Proxy+"gate", map[string]string{
 						"captcha":     msg.captcha,
 						"captchaData": msg.captchaData,
 					})
@@ -265,7 +265,7 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 
 				} else if msg.stage == 2 {
 					scrapers[msg.id].CurrentStage = msg.stage
-					err := scrapers[msg.id].collector.Post(hydraProxy+"login", map[string]string{
+					err := scrapers[msg.id].collector.Post(cfg.Proxy+"login", map[string]string{
 						"captcha":     msg.captcha,
 						"captchaData": msg.captchaData,
 						"login":       scrapers[msg.id].Login,
@@ -292,7 +292,7 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 					scrapers[0].CurrentStage = 10
 					log.Print(scrapers[0].userID)
 					log.Print(*scrapers[0].userID)
-					job := hydraProxy + "catalog/" + msg.user.cat + "?query=&region_id=" + msg.user.city + "&subregion_id=0&price%5Bmin%5D=&price%5Bmax%5D=&unit=g&weight%5Bmin%5D=&weight%5Bmax%5D=&type=momental"
+					job := cfg.Proxy + "catalog/" + msg.user.catValues + "?query=&region_id=" + msg.user.cityValues + "&subregion_id=0&price%5Bmin%5D=&price%5Bmax%5D=&unit=g&weight%5Bmin%5D=&weight%5Bmax%5D=&type=momental"
 					err := scrapers[0].collector.Visit(job)
 					log.Print(err)
 					log.Print(job)
