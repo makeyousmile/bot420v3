@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"github.com/PuerkitoBio/goquery"
+	"github.com/avast/retry-go"
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/proxy"
 	"log"
@@ -56,7 +57,8 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 	})
 
 	// Rotate two socks5 proxies
-	rp, err := proxy.RoundRobinProxySwitcher("socks5://165.232.72.180:9150")
+	//rp, err := proxy.RoundRobinProxySwitcher("socks5://165.232.72.180:9150")
+	rp, err := proxy.RoundRobinProxySwitcher("socks5://127.0.0.1:9150")
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -293,7 +295,17 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 					log.Print(scrapers[0].userID)
 					log.Print(*scrapers[0].userID)
 					job := cfg.Proxy + "catalog/" + msg.user.catValues + "?query=&region_id=" + msg.user.cityValues + "&subregion_id=0&price%5Bmin%5D=&price%5Bmax%5D=&unit=g&weight%5Bmin%5D=&weight%5Bmax%5D=&type=momental"
-					err := scrapers[0].collector.Visit(job)
+
+					err := retry.Do(
+						func() error {
+							err := scrapers[0].collector.Visit(job)
+							if err != nil {
+								return err
+							}
+
+							return nil
+						},
+					)
 					if err != nil {
 						msgToBot := MessageToBot{
 							id:          msg.id,

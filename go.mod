@@ -7,6 +7,7 @@ require (
 	github.com/Syfaro/telegram-bot-api v4.6.4+incompatible
 	github.com/antchfx/htmlquery v1.2.3 // indirect
 	github.com/antchfx/xmlquery v1.3.0 // indirect
+	github.com/avast/retry-go v3.0.0+incompatible
 	github.com/go-telegram-bot-api/telegram-bot-api v4.6.4+incompatible // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gocolly/colly v1.2.0
