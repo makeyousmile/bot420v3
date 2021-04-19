@@ -1,9 +1,6 @@
 FROM golang:latest
-
+RUN mkdir /app
+ADD . /app/
 WORKDIR /app
-
-COPY ./ /app
-
-RUN go mod download
-
-ENTRYPOINT go run main.go
+RUN go build -o main .
+CMD ["/app/main"]

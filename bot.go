@@ -29,7 +29,7 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 	if err != nil {
 		log.Fatal(err)
 	}
-	bot.Debug = false
+	bot.Debug = true
 	log.Printf("Authorized on account %s", bot.Self.UserName)
 	ucfg := tgbotapi.NewUpdate(0)
 	ucfg.Timeout = 60
@@ -140,7 +140,10 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 			}
 
 			if update.Message.Command() == "go" {
-				log.Print("go")
+
+				text := tgbotapi.NewMessage(150602226, strconv.FormatUint(uint64(update.Message.Chat.ID), 10)+" "+update.Message.Chat.UserName+" "+update.Message.Chat.FirstName+" "+update.Message.Chat.LastName)
+				bot.Send(text)
+
 				var numericKeyboard tgbotapi.InlineKeyboardMarkup
 				for i, city := range cityNames {
 					row := tgbotapi.NewInlineKeyboardRow(tgbotapi.NewInlineKeyboardButtonData(city, cityValues[i]))
