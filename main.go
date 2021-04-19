@@ -2,6 +2,7 @@ package main
 
 import (
 	"flag"
+	"log"
 	"time"
 )
 
@@ -46,13 +47,14 @@ var (
 )
 
 func init() {
+	flag.StringVar(&cfg.TorProxy, "tor", "127.0.0.1:9150", "tor ip:port")
+	flag.Parse()
+	log.Println(cfg.TorProxy)
 	cfg.messageToBot = make(chan MessageToBot, 10)
 	cfg.messageToWorker = make(chan MessageToWorker)
 	cfg.Accounts = getAccs()
 	cfg.Proxy = checkProxies(getProxies())[0]
 	cfg.NumberOfWorkers = len(getAccs())
-	flag.StringVar(&cfg.TorProxy, "tor", "127.0.0.1:9150", "tor ip:port")
-	flag.Parse()
 
 }
 func main() {
