@@ -58,7 +58,8 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 
 	// Rotate two socks5 proxies
 	//rp, err := proxy.RoundRobinProxySwitcher("socks5://165.232.72.180:9150")
-	rp, err := proxy.RoundRobinProxySwitcher("socks5://127.0.0.1:9150")
+	proxyString := "socks5://" + cfg.TorProxy
+	rp, err := proxy.RoundRobinProxySwitcher(proxyString)
 	if err != nil {
 		log.Fatal(err)
 	}

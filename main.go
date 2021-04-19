@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"time"
 )
 
@@ -37,6 +38,7 @@ type Cfg struct {
 	NumberOfWorkers int
 	messageToBot    chan MessageToBot
 	messageToWorker chan MessageToWorker
+	TorProxy        string
 }
 
 var (
@@ -49,6 +51,8 @@ func init() {
 	cfg.Accounts = getAccs()
 	cfg.Proxy = checkProxies(getProxies())[0]
 	cfg.NumberOfWorkers = len(getAccs())
+	flag.StringVar(&cfg.TorProxy, "tor", "127.0.0.1:9150", "tor ip:port")
+	flag.Parse()
 
 }
 func main() {
