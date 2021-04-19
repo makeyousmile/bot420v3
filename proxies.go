@@ -71,7 +71,8 @@ func startColly() *colly.Collector {
 func checkProxy(addr string) (bool, time.Duration) {
 	var check bool
 	c := startColly()
-	rp, err := proxy.RoundRobinProxySwitcher("socks5://165.232.72.180:9150")
+
+	rp, err := proxy.RoundRobinProxySwitcher("socks5://" + cfg.TorProxy)
 	if err != nil {
 		log.Fatal(err)
 	}
