@@ -10,8 +10,27 @@ import (
 	"net"
 	"net/http"
 	"os"
+	"sort"
 	"time"
 )
+
+type Mirror struct {
+	Addr    string
+	ResTime time.Duration
+}
+
+type Mirrors []Mirror
+
+func (m Mirrors) Len() int {
+	return len(m)
+}
+
+func (m Mirrors) Swap(i, j int) {
+	m[i], m[j] = m[j], m[i]
+}
+func (m Mirrors) Less(i, j int) bool {
+	return m[i].ResTime < m[j].ResTime
+}
 
 func getProxies() []string {
 	var proxies []string
@@ -30,10 +49,12 @@ func getProxies() []string {
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
+	sort.Strings(proxies)
 	return proxies
 }
-func checkProxies(proxies []string) []string {
-	var workProxies []string
+func checkProxies(proxies []string) string {
+
+	var workProxies Mirrors
 
 	// Rotate two socks5 proxies
 	for _, addr := range proxies {
@@ -43,12 +64,18 @@ func checkProxies(proxies []string) []string {
 				text: addr + "" + responseTime.String(),
 			}
 			cfg.messageToBot <- msg
-			workProxies = append(workProxies, addr)
+			mirror := Mirror{
+				Addr:    addr,
+				ResTime: responseTime,
+			}
+			workProxies = append(workProxies, mirror)
 		}
 
 	}
-
-	return workProxies
+	log.Print(workProxies)
+	sort.Sort(workProxies)
+	log.Print(workProxies)
+	return workProxies[0].Addr
 }
 
 func startColly() *colly.Collector {
@@ -100,16 +127,18 @@ func checkProxy(addr string) (bool, time.Duration) {
 	c.Async = false
 	t1 := time.Now()
 	err = c.Visit(addr)
-	t2 := time.Now().Sub(t1)
-	log.Print(t2)
 	if err != nil {
 		log.Print(err)
-		msg := MessageToBot{
-			text: err.Error(),
-		}
-		cfg.messageToBot <- msg
+		go func() {
+			msg := MessageToBot{
+				text: err.Error(),
+			}
+			cfg.messageToBot <- msg
+		}()
 	}
+
 	c.Wait()
-	log.Print(check)
+	t2 := time.Now().Sub(t1)
+
 	return check, t2
 }

@@ -296,7 +296,7 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 					log.Print(scrapers[0].userID)
 					log.Print(*scrapers[0].userID)
 					job := cfg.Proxy + "catalog/" + msg.user.catValues + "?query=&region_id=" + msg.user.cityValues + "&subregion_id=0&price%5Bmin%5D=&price%5Bmax%5D=&unit=g&weight%5Bmin%5D=&weight%5Bmax%5D=&type=momental"
-
+					retry.DefaultAttempts = 5
 					err := retry.Do(
 						func() error {
 							err := scrapers[0].collector.Visit(job)

@@ -53,7 +53,7 @@ func init() {
 	cfg.messageToBot = make(chan MessageToBot, 10)
 	cfg.messageToWorker = make(chan MessageToWorker)
 	cfg.Accounts = getAccs()
-	cfg.Proxy = checkProxies(getProxies())[0]
+	cfg.Proxy = checkProxies(getProxies())
 	cfg.NumberOfWorkers = len(getAccs())
 
 }
