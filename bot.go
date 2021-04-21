@@ -209,8 +209,8 @@ func marketView(markets []HydraShop) string {
 
 	for i := 0; i < len(markets); i++ {
 		market := []rune(markets[i].Market)
-		if len(market) > 36 {
-			market = market[:33]
+		if len(market) > 39 {
+			market = market[:38]
 		}
 		view += strconv.Itoa(i+1) + ". " + markets[i].Title + "\n  " + "<b>" + markets[i].Price + "</b>" + "\n <code>" + string(market) + "</code>\n\n"
 
