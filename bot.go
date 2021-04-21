@@ -61,13 +61,13 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 			}
 			if msg.stage == 3 {
 				log.Print("msg.stage == 3")
-				answer := ""
-				for i, market := range msg.hs {
-					if market.Price != "" {
-						m := strconv.Itoa(i+1) + ". <b>" + market.Title + "</b>\n " + market.Price + "\n\n"
-						answer += m
-					}
-				}
+				answer := marketView(msg.hs)
+				//for i, market := range msg.hs {
+				//	if market.Price != "" {
+				//		m := strconv.Itoa(i+1) + ". <b>" + market.Title + "</b>\n " + market.Price + "\n\n"
+				//		answer += m
+				//	}
+				//}
 				msg := tgbotapi.NewMessage(msg.user.id, answer)
 				msg.ParseMode = "HTML"
 				bot.Send(msg)
@@ -202,4 +202,18 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 		}
 
 	}
+}
+
+func marketView(markets []HydraShop) string {
+	var view string
+
+	for i := 0; i < len(markets); i++ {
+		market := []rune(markets[i].Market)
+		if len(market) > 36 {
+			market = market[:33]
+		}
+		view += strconv.Itoa(i+1) + ". " + markets[i].Title + "\n  " + "<b>" + markets[i].Price + "</b>" + "\n <code>" + string(market) + "</code>\n\n"
+
+	}
+	return view
 }
