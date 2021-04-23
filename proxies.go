@@ -84,8 +84,8 @@ func startColly() *colly.Collector {
 	c.WithTransport(&http.Transport{
 		Proxy: http.ProxyFromEnvironment,
 		DialContext: (&net.Dialer{
-			Timeout:   60 * time.Second,
-			KeepAlive: 60 * time.Second,
+			Timeout:   900 * time.Second,
+			KeepAlive: 900 * time.Second,
 			//		DualStack: true,
 		}).DialContext,
 		MaxIdleConns:          0,
@@ -93,6 +93,7 @@ func startColly() *colly.Collector {
 		TLSHandshakeTimeout:   0,
 		ExpectContinueTimeout: 0,
 	})
+	c.SetRequestTimeout(60 * time.Second)
 	return c
 }
 func checkProxy(addr string) (bool, time.Duration) {
