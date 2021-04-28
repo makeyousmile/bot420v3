@@ -38,12 +38,17 @@ func getProxies() []string {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}(file)
 
 	scanner := bufio.NewScanner(file)
 	for scanner.Scan() {
-		proxy := scanner.Text()
-		proxies = append(proxies, proxy)
+		mirror := scanner.Text()
+		proxies = append(proxies, mirror)
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -75,6 +80,9 @@ func checkProxies(proxies []string) string {
 	log.Print(workProxies)
 	sort.Sort(workProxies)
 	log.Print(workProxies)
+	if len(workProxies) == 0 {
+		log.Fatal("Zero working mirrors found. Exiting ...")
+	}
 	return workProxies[0].Addr
 }
 

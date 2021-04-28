@@ -1,31 +1,21 @@
 package main
 
 import (
-	"encoding/json"
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	"log"
-	"os"
 	"strconv"
+	"time"
 )
 
-type BotCfg struct {
-	TelegramBotToken string
-}
-
 func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWorker) {
+
+	checkWithInterval(messagesToWorker, 5)
 
 	links := NewLinks()
 	users := make(map[int64]botUser)
 
-	file, _ := os.Open("config.json")
-	decoder := json.NewDecoder(file)
-	botcfg := BotCfg{}
-	err := decoder.Decode(&botcfg)
-	if err != nil {
-		log.Fatal(err)
-	}
 	//start new Telegram Bot with API token from Cfg struct var
-	bot, err := tgbotapi.NewBotAPI(botcfg.TelegramBotToken)
+	bot, err := tgbotapi.NewBotAPI(cfg.BotToken)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -42,22 +32,31 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 			cash[msg.id] = msg
 
 			if msg.text != "" {
-				text := tgbotapi.NewMessage(150602226, msg.text+" id="+strconv.FormatUint(uint64(msg.id), 10))
-				bot.Send(text)
+				text := tgbotapi.NewMessage(cfg.AdminChatId, msg.text+" id="+strconv.FormatUint(uint64(msg.id), 10))
+				_, err := bot.Send(text)
+				if err != nil {
+					log.Print(err)
+				}
 				continue
 			}
 			if msg.stage == 0 {
 
-				photo := tgbotapi.NewPhotoUpload(150602226, strconv.FormatUint(uint64(msg.id), 10)+".jpeg")
+				photo := tgbotapi.NewPhotoUpload(cfg.AdminChatId, strconv.FormatUint(uint64(msg.id), 10)+".jpeg")
 				photo.Caption = strconv.FormatUint(uint64(msg.id), 10)
-				bot.Send(photo)
+				_, err := bot.Send(photo)
+				if err != nil {
+					log.Print(err)
+				}
 			}
 			if msg.stage == 2 {
 
 				//msgtext := tgbotapi.NewMessage(150602226, msg.captcha)
-				photo := tgbotapi.NewPhotoUpload(150602226, strconv.FormatUint(uint64(msg.id), 10)+".jpeg")
+				photo := tgbotapi.NewPhotoUpload(cfg.AdminChatId, strconv.FormatUint(uint64(msg.id), 10)+".jpeg")
 				photo.Caption = strconv.FormatUint(uint64(msg.id), 10)
-				bot.Send(photo)
+				_, err := bot.Send(photo)
+				if err != nil {
+					log.Print(err)
+				}
 			}
 			if msg.stage == 3 {
 				log.Print("msg.stage == 3")
@@ -70,7 +69,10 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 				//}
 				msg := tgbotapi.NewMessage(msg.user.id, answer)
 				msg.ParseMode = "HTML"
-				bot.Send(msg)
+				_, err := bot.Send(msg)
+				if err != nil {
+					log.Print(err)
+				}
 			}
 			if msg.user.id != 0 {
 				log.Print(msg.user.id != 0)
@@ -88,14 +90,20 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 			users[id] = user
 
 			typing := tgbotapi.NewChatAction(update.Message.Chat.ID, "typing")
-			bot.Send(typing)
+			_, err := bot.Send(typing)
+			if err != nil {
+				log.Print(err)
+			}
 
 			for i := 0; i < cfg.NumberOfWorkers; i++ {
 				if update.Message.Command() == strconv.Itoa(i) {
 
 					msg := tgbotapi.NewMessage(update.Message.Chat.ID, strconv.Itoa(i))
 					msg.ReplyToMessageID = update.Message.MessageID
-					bot.Send(msg)
+					_, err := bot.Send(msg)
+					if err != nil {
+						log.Print(err)
+					}
 
 					log.Print(cash[i].captchaData)
 					log.Print(update.Message.CommandArguments())
@@ -136,13 +144,19 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 				//workers[0].collector.Visit(job)
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "1")
 				msg.ReplyToMessageID = update.Message.MessageID
-				bot.Send(msg)
+				_, err = bot.Send(msg)
+				if err != nil {
+					return
+				}
 			}
 
 			if update.Message.Command() == "go" {
 
-				text := tgbotapi.NewMessage(150602226, strconv.FormatUint(uint64(update.Message.Chat.ID), 10)+" "+update.Message.Chat.UserName+" "+update.Message.Chat.FirstName+" "+update.Message.Chat.LastName)
-				bot.Send(text)
+				text := tgbotapi.NewMessage(cfg.AdminChatId, strconv.FormatUint(uint64(update.Message.Chat.ID), 10)+" "+update.Message.Chat.UserName+" "+update.Message.Chat.FirstName+" "+update.Message.Chat.LastName)
+				_, err := bot.Send(text)
+				if err != nil {
+					log.Print(err)
+				}
 
 				var numericKeyboard tgbotapi.InlineKeyboardMarkup
 				for i, city := range cityNames {
@@ -152,13 +166,19 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 
 				msg := tgbotapi.NewMessage(update.Message.Chat.ID, "Выберите город")
 				msg.ReplyMarkup = numericKeyboard
-				bot.Send(msg)
+				_, err = bot.Send(msg)
+				if err != nil {
+					log.Print(err)
+				}
 				log.Print("hey")
 			}
 		}
 		if update.CallbackQuery != nil {
 			id := update.CallbackQuery.Message.Chat.ID
-			bot.AnswerCallbackQuery(tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data))
+			_, err := bot.AnswerCallbackQuery(tgbotapi.NewCallback(update.CallbackQuery.ID, update.CallbackQuery.Data))
+			if err != nil {
+				log.Print(err)
+			}
 			data := update.CallbackQuery.Data
 
 			if users[id].cityValues == "" {
@@ -172,7 +192,10 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 				}
 				//editedMsg := tgbotapi.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, users[id].cityValues+users[id].catValues)
 				editedMsg := tgbotapi.NewDeleteMessage(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID)
-				bot.Send(editedMsg)
+				_, err := bot.Send(editedMsg)
+				if err != nil {
+					log.Print(err)
+				}
 				mess := MessageToWorker{
 					mtype: 1,
 					user:  users[id],
@@ -193,10 +216,16 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 				}
 				//edit top text
 				editedMsg := tgbotapi.NewEditMessageText(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, "Выберите категорию")
-				bot.Send(editedMsg)
+				_, err := bot.Send(editedMsg)
+				if err != nil {
+					log.Print(err)
+				}
 				//edit body
 				editedMsg2 := tgbotapi.NewEditMessageReplyMarkup(update.CallbackQuery.Message.Chat.ID, update.CallbackQuery.Message.MessageID, CatKeyboard)
-				bot.Send(editedMsg2)
+				_, err = bot.Send(editedMsg2)
+				if err != nil {
+					log.Print(err)
+				}
 			}
 
 		}
@@ -216,4 +245,25 @@ func marketView(markets []HydraShop) string {
 
 	}
 	return view
+}
+
+func checkWithInterval(bot chan MessageToWorker, interval int) {
+	go func() {
+		for {
+			log.Println("---------------------------------checkInterval------------------------------")
+			user := botUser{
+				cityValues: "410",
+				catValues:  "3",
+				id:         cfg.AdminChatId,
+			}
+			m := MessageToWorker{
+				mtype: 1,
+				stage: 10,
+				user:  user,
+			}
+			bot <- m
+			time.Sleep(time.Minute * time.Duration(interval))
+		}
+	}()
+
 }

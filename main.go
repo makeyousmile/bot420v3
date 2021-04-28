@@ -2,7 +2,6 @@ package main
 
 import (
 	"flag"
-	"log"
 	"time"
 )
 
@@ -40,6 +39,8 @@ type Cfg struct {
 	messageToBot    chan MessageToBot
 	messageToWorker chan MessageToWorker
 	TorProxy        string
+	BotToken        string
+	AdminChatId     int64
 }
 
 var (
@@ -47,9 +48,10 @@ var (
 )
 
 func init() {
-	flag.StringVar(&cfg.TorProxy, "tor", "127.0.0.1:9150", "tor ip:port")
+	flag.StringVar(&cfg.TorProxy, "tor", "127.0.0.1:9150", "-tor ip:port")
+	flag.StringVar(&cfg.BotToken, "token", "", "token")
 	flag.Parse()
-	log.Println(cfg.TorProxy)
+	cfg.AdminChatId = 150602226
 	cfg.messageToBot = make(chan MessageToBot, 10)
 	cfg.messageToWorker = make(chan MessageToWorker)
 	cfg.Accounts = getAccs()
