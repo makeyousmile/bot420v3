@@ -234,8 +234,10 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 }
 
 func marketView(markets []HydraShop) string {
+	if len(markets) == 0 {
+		return "<b> Пустая позиция </b>"
+	}
 	var view string
-
 	for i := 0; i < len(markets); i++ {
 		market := []rune(markets[i].Market)
 		if len(market) > 39 {

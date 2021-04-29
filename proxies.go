@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"fmt"
 	"github.com/PuerkitoBio/goquery"
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/proxy"
@@ -54,7 +55,6 @@ func getProxies() []string {
 	if err := scanner.Err(); err != nil {
 		log.Fatal(err)
 	}
-	sort.Strings(proxies)
 	return proxies
 }
 func checkProxies(proxies []string) string {
@@ -114,11 +114,16 @@ func checkProxy(addr string) (bool, time.Duration) {
 	}
 	c.SetProxyFunc(rp)
 
+	c.OnError(func(r *colly.Response, err error) {
+		log.Println(r.Request.URL)
+		log.Print(err)
+	})
 	c.OnRequest(func(r *colly.Request) {
-		//	fmt.Println("Visiting", r.URL)
+		fmt.Println("Visiting", r.URL)
 	})
 
 	c.OnResponse(func(r *colly.Response) {
+		log.Print(r.Request.URL)
 		doc, err := goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
 		if err != nil {
 			log.Print(err)

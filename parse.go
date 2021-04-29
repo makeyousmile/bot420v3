@@ -41,6 +41,8 @@ func parse(page string) ([]HydraShop, string) {
 		hydraShops = append(hydraShops, hs)
 		selection.Find("div.slide").Each(func(n int, selection *goquery.Selection) {
 			subhs := HydraShop{}
+			link, _ := selection.Find("a").Attr("href")
+			subhs.Link = strings.TrimSpace(link)
 			subhs.Title = strings.TrimSpace(selection.Find("div.slide_title").Text())
 			subhs.Price = strings.TrimSpace(selection.Find("span.slide_price").Text())
 			subhs.Market = hs.Market

@@ -68,149 +68,163 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 
 	c.OnRequest(func(r *colly.Request) {
 		//	fmt.Println("Visiting", r.URL)
+
 	})
 
 	c.OnResponse(func(r *colly.Response) {
-		log.Print(*s.userID)
-		//log.Print(s.CurrentStage)
-		log.Printf("%s\n", bytes.Replace(r.Body, []byte("\n"), nil, -1))
-		//log.Print(string(r.Body)[:])
-		doc, err := goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
-		if err != nil {
-			log.Print(err)
-		}
+		temphs := r.Ctx.GetAny("hs")
+		if temphs != nil {
+			hs := temphs.(HydraShop)
+			log.Print("888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888")
+			log.Print(cfg.Proxy + hs.Link)
 
-		if strings.Contains(string(r.Body), "Забыли пароль?") {
-			s.CurrentStage = 1
-		}
-		if s.CurrentStage == 3 {
-			hydraShops, city := parse(string(r.Body))
-			if len(hydraShops) > 0 {
-
-				if city != "" {
-					//	log.Print(r.Headers.Get("region_id") + "===================================================")
-					city = TrimCollName(city)
-					//WriteToDb(cityValues+":"+hydraShops[0].Category, hydraShops)
-					msg := MessageToBot{
-						id:    int(c.ID),
-						stage: s.CurrentStage,
-						hs:    hydraShops,
-						user:  botUser{id: *s.userID},
-					}
-					log.Print(hydraShops)
-					messageToBot <- msg
-
-				}
-
-				//log.Print(hydraShops[0].Market)
-			}
-			//c.Visit(link.getJob())
-			return
-		}
-		Login := strings.Contains(string(r.Body), "Мои заказы")
-		title := doc.Find("title").Text()
-		if s.CurrentStage == 0 || title == "Вы не робот?" {
-			file, exist := doc.Find("img").Attr("src")
-			if exist {
-				base64toJpg(file, strconv.FormatUint(uint64(c.ID), 10)+".jpeg")
-			}
-
-			doc.Find("input").Each(func(i int, selection *goquery.Selection) {
-				tag, exist := selection.Attr("name")
-				if exist {
-					if tag == "captchaData" {
-						value, exist := selection.Attr("value")
-						if exist {
-							s.captchaData = value
-							msg := MessageToBot{
-								id:          int(c.ID),
-								captchaData: value,
-								stage:       s.CurrentStage,
-							}
-							messageToBot <- msg
-						}
-					}
-				}
-
-			})
-		} else if s.CurrentStage == 0 && title == "HYDRA" {
-			s.CurrentStage = 1
-			log.Print("stage = 1")
-			log.Print(s.CurrentStage)
-			log.Print("visit login stage ")
-			err := c.Visit(cfg.Proxy + "login")
+		} else {
+			log.Print(*s.userID)
+			//log.Print(s.CurrentStage)
+			log.Printf("%s\n", bytes.Replace(r.Body, []byte("\n"), nil, -1))
+			//log.Print(string(r.Body)[:])
+			doc, err := goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
 			if err != nil {
 				log.Print(err)
 			}
 
-		} else if Login {
-			s.CurrentStage = 3
-			//log.Print("time to scrap!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-			go func() {
-
-				msg := MessageToWorker{
-					id:          int(s.id),
-					captcha:     "",
-					captchaData: "",
-					text:        "",
-					mtype:       0,
-					stage:       s.CurrentStage,
-				}
-				messageToWorker <- msg
-			}()
-
-		} else if s.CurrentStage == 2 && title == "HYDRA" {
-			log.Print("stage = 2 2")
-			file, exist := doc.Find("img").Attr("src")
-			if exist {
-				base64toJpg(file, strconv.FormatUint(uint64(c.ID), 10)+".jpeg")
+			if strings.Contains(string(r.Body), "Забыли пароль?") {
+				s.CurrentStage = 1
 			}
+			if s.CurrentStage == 3 {
 
-			doc.Find("input").Each(func(i int, selection *goquery.Selection) {
-				tag, exist := selection.Attr("name")
-				if exist {
-					if tag == "captchaData" {
-						value, exist := selection.Attr("value")
-						if exist {
-							msg := MessageToBot{
-								id:          int(c.ID),
-								captchaData: value,
-								stage:       s.CurrentStage,
-							}
-							messageToBot <- msg
-						}
+				hydraShops, city := parse(string(r.Body))
+				for _, hydraShop := range hydraShops {
+					log.Print(hydraShop)
+					ctx := colly.NewContext()
+					ctx.Put("hs", hydraShop)
+					err := s.collector.Request("GET", cfg.Proxy+hydraShop.Link, nil, ctx, nil)
+					if err != nil {
+						log.Print("get Position Page Error")
 					}
 				}
 
-			})
+				log.Print(hydraShops)
+				log.Print("========================================================================")
+				//	log.Print(r.Headers.Get("region_id") + "===================================================")
+				city = TrimCollName(city)
+				//WriteToDb(cityValues+":"+hydraShops[0].Category, hydraShops)
+				msg := MessageToBot{
+					id:    int(c.ID),
+					stage: s.CurrentStage,
+					hs:    hydraShops,
+					user:  botUser{id: *s.userID},
+				}
+				log.Print(hydraShops)
+				messageToBot <- msg
 
-		} else if s.CurrentStage == 1 && title == "HYDRA" {
-			log.Print("stage = 2")
-			s.CurrentStage = 2
-			file, exist := doc.Find("img").Attr("src")
-			if exist {
-				base64toJpg(file, strconv.FormatUint(uint64(c.ID), 10)+".jpeg")
+				return
 			}
-
-			doc.Find("input").Each(func(i int, selection *goquery.Selection) {
-				tag, exist := selection.Attr("name")
+			Login := strings.Contains(string(r.Body), "Мои заказы")
+			title := doc.Find("title").Text()
+			if s.CurrentStage == 0 || title == "Вы не робот?" {
+				file, exist := doc.Find("img").Attr("src")
 				if exist {
-					if tag == "captchaData" {
-						value, exist := selection.Attr("value")
-						if exist {
-							msg := MessageToBot{
-								id:          int(c.ID),
-								captchaData: value,
-								stage:       s.CurrentStage,
-							}
-
-							messageToBot <- msg
-						}
-					}
+					base64toJpg(file, strconv.FormatUint(uint64(c.ID), 10)+".jpeg")
 				}
 
-			})
+				doc.Find("input").Each(func(i int, selection *goquery.Selection) {
+					tag, exist := selection.Attr("name")
+					if exist {
+						if tag == "captchaData" {
+							value, exist := selection.Attr("value")
+							if exist {
+								s.captchaData = value
+								msg := MessageToBot{
+									id:          int(c.ID),
+									captchaData: value,
+									stage:       s.CurrentStage,
+								}
+								messageToBot <- msg
+							}
+						}
+					}
 
+				})
+			} else if s.CurrentStage == 0 && title == "HYDRA" {
+				s.CurrentStage = 1
+				log.Print("stage = 1")
+				log.Print(s.CurrentStage)
+				log.Print("visit login stage ")
+				err := c.Visit(cfg.Proxy + "login")
+				if err != nil {
+					log.Print(err)
+				}
+
+			} else if Login {
+				s.CurrentStage = 3
+				//log.Print("time to scrap!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+				go func() {
+
+					msg := MessageToWorker{
+						id:          int(s.id),
+						captcha:     "",
+						captchaData: "",
+						text:        "",
+						mtype:       0,
+						stage:       s.CurrentStage,
+					}
+					messageToWorker <- msg
+				}()
+
+			} else if s.CurrentStage == 2 && title == "HYDRA" {
+				log.Print("stage = 2 2")
+				file, exist := doc.Find("img").Attr("src")
+				if exist {
+					base64toJpg(file, strconv.FormatUint(uint64(c.ID), 10)+".jpeg")
+				}
+
+				doc.Find("input").Each(func(i int, selection *goquery.Selection) {
+					tag, exist := selection.Attr("name")
+					if exist {
+						if tag == "captchaData" {
+							value, exist := selection.Attr("value")
+							if exist {
+								msg := MessageToBot{
+									id:          int(c.ID),
+									captchaData: value,
+									stage:       s.CurrentStage,
+								}
+								messageToBot <- msg
+							}
+						}
+					}
+
+				})
+
+			} else if s.CurrentStage == 1 && title == "HYDRA" {
+				log.Print("stage = 2")
+				s.CurrentStage = 2
+				file, exist := doc.Find("img").Attr("src")
+				if exist {
+					base64toJpg(file, strconv.FormatUint(uint64(c.ID), 10)+".jpeg")
+				}
+
+				doc.Find("input").Each(func(i int, selection *goquery.Selection) {
+					tag, exist := selection.Attr("name")
+					if exist {
+						if tag == "captchaData" {
+							value, exist := selection.Attr("value")
+							if exist {
+								msg := MessageToBot{
+									id:          int(c.ID),
+									captchaData: value,
+									stage:       s.CurrentStage,
+								}
+
+								messageToBot <- msg
+							}
+						}
+					}
+
+				})
+
+			}
 		}
 
 		//log.Print(doc.Find("img").Attr("src"))
@@ -300,7 +314,10 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 					retry.DefaultAttempts = 3
 					err := retry.Do(
 						func() error {
-							err := scrapers[0].collector.Visit(job)
+							ctx := colly.NewContext()
+
+							//err := scrapers[0].collector.Visit(job)
+							err := scrapers[0].collector.Request("GET", job, nil, ctx, nil)
 							if err != nil {
 								return err
 							}

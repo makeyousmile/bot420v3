@@ -5,12 +5,20 @@ import (
 	"time"
 )
 
+type Position struct {
+	weight string
+	price  string
+}
+type Positions []Position
+
 type HydraShop struct {
-	Category   string
-	Title      string
-	Text       string
-	Market     string
-	Price      string
+	Category string
+	Title    string
+	Text     string
+	Market   string
+	Price    string
+	Link     string
+	Positions
 	UpdateTime time.Time
 }
 
