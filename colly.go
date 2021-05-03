@@ -67,6 +67,7 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 	c.SetProxyFunc(rp)
 
 	c.OnRequest(func(r *colly.Request) {
+		r.Headers.Set("Accept-Encoding", "gzip")
 		//	fmt.Println("Visiting", r.URL)
 
 	})
