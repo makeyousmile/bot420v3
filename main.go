@@ -41,14 +41,15 @@ type MessageToWorker struct {
 	user        botUser
 }
 type Cfg struct {
-	Accounts        []acc
-	Proxy           string
-	NumberOfWorkers int
-	messageToBot    chan MessageToBot
-	messageToWorker chan MessageToWorker
-	TorProxy        string
-	BotToken        string
-	AdminChatId     int64
+	Accounts          []acc
+	Proxy             string
+	NumberOfWorkers   int
+	messageToBot      chan MessageToBot
+	messageToWorker   chan MessageToWorker
+	TorProxy          string
+	BotToken          string
+	AdminChatId       int64
+	ResponseTimeLimit time.Duration
 }
 
 var (
@@ -63,8 +64,9 @@ func init() {
 	cfg.messageToBot = make(chan MessageToBot, 10)
 	cfg.messageToWorker = make(chan MessageToWorker)
 	cfg.Accounts = getAccs()
-	cfg.Proxy = checkProxies(getProxies())
+	cfg.Proxy = checkProxies(getProxies())[0].Addr
 	cfg.NumberOfWorkers = len(getAccs())
+	cfg.ResponseTimeLimit = time.Second * 10
 
 }
 func main() {

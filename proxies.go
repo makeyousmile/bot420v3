@@ -57,7 +57,7 @@ func getProxies() []string {
 	}
 	return proxies
 }
-func checkProxies(proxies []string) string {
+func checkProxies(proxies []string) Mirrors {
 
 	var workProxies Mirrors
 
@@ -74,6 +74,12 @@ func checkProxies(proxies []string) string {
 				ResTime: responseTime,
 			}
 			workProxies = append(workProxies, mirror)
+		} else {
+			mirror := Mirror{
+				Addr:    addr,
+				ResTime: time.Second * 999,
+			}
+			workProxies = append(workProxies, mirror)
 		}
 
 	}
@@ -83,7 +89,7 @@ func checkProxies(proxies []string) string {
 	if len(workProxies) == 0 {
 		log.Fatal("Zero working mirrors found. Exiting ...")
 	}
-	return workProxies[0].Addr
+	return workProxies
 }
 
 func startColly() *colly.Collector {

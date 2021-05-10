@@ -150,6 +150,24 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 				}
 			}
 
+			if update.Message.Command() == "check" {
+				text := tgbotapi.NewMessage(update.Message.Chat.ID, "Проверка работоспособности зеркал (1-2 минуты) ... ")
+				bot.Send(text)
+				answer := ""
+				mirrors := checkProxies(getProxies())
+
+				for i, mirror := range mirrors {
+					answer += "\n" + strconv.Itoa(i) + ". "
+					if mirror.ResTime < cfg.ResponseTimeLimit {
+						answer += mirror.Addr + "Время отклика: " + mirror.ResTime.String()
+					} else {
+						answer += "Зеркало: " + mirror.Addr + " недоступно!"
+					}
+				}
+				text = tgbotapi.NewMessage(update.Message.Chat.ID, answer)
+				bot.Send(text)
+
+			}
 			if update.Message.Command() == "go" {
 
 				text := tgbotapi.NewMessage(cfg.AdminChatId, strconv.FormatUint(uint64(update.Message.Chat.ID), 10)+" "+update.Message.Chat.UserName+" "+update.Message.Chat.FirstName+" "+update.Message.Chat.LastName)
