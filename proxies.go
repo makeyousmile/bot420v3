@@ -8,8 +8,6 @@ import (
 	"github.com/gocolly/colly"
 	"github.com/gocolly/colly/proxy"
 	"log"
-	"net"
-	"net/http"
 	"os"
 	"sort"
 	"time"
@@ -92,28 +90,9 @@ func checkProxies(proxies []string) Mirrors {
 	return workProxies
 }
 
-func startColly() *colly.Collector {
-	c := colly.NewCollector(colly.AllowURLRevisit())
-	c.UserAgent = "User Agent 3.57 11.86 Mozilla/5.0 (Windows NT 6.1; rv:60.0) Gecko/20100101 Firefox/60.0"
-	c.WithTransport(&http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   900 * time.Second,
-			KeepAlive: 900 * time.Second,
-			//		DualStack: true,
-		}).DialContext,
-		MaxIdleConns:          0,
-		IdleConnTimeout:       0,
-		TLSHandshakeTimeout:   0,
-		ExpectContinueTimeout: 0,
-	})
-	c.SetRequestTimeout(60 * time.Second)
-	return c
-}
 func checkProxy(addr string) (bool, time.Duration) {
 	var check bool
-	c := startColly()
-
+	c := NewColly()
 	rp, err := proxy.RoundRobinProxySwitcher("socks5://" + cfg.TorProxy)
 	if err != nil {
 		log.Fatal(err)
@@ -125,6 +104,9 @@ func checkProxy(addr string) (bool, time.Duration) {
 		log.Print(err)
 	})
 	c.OnRequest(func(r *colly.Request) {
+		// EOF fix from so
+		r.Headers.Set("Accept-Encoding", "gzip")
+
 		fmt.Println("Visiting", r.URL)
 	})
 

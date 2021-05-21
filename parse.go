@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-func parse(page string) ([]HydraShop, string) {
+func parse(page string) []HydraShop {
 	var hydraShops []HydraShop
 	selection, err := goquery.NewDocumentFromReader(strings.NewReader(page))
 	if err != nil {
@@ -51,5 +51,6 @@ func parse(page string) ([]HydraShop, string) {
 		})
 	})
 
-	return hydraShops, cityName
+	//return hydraShops, cityName
+	return hydraShops
 }

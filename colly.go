@@ -32,57 +32,36 @@ type Scraper struct {
 
 func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWorker chan MessageToWorker) *colly.Collector {
 
-	//link := NewLinks()
-	c := colly.NewCollector(colly.AllowURLRevisit())
-	c.UserAgent = "User Agent 3.57 11.86 Mozilla/5.0 (Windows NT 6.1; rv:60.0) Gecko/20100101 Firefox/60.0"
-	//storage := &mongo.Storage{
-	//	Database: "colly",
-	//	URI:      "mongodb://localhost:27017",
-	//}
-	//if err := c.SetStorage(storage); err != nil {
-	//	panic(err)
-	//}
+	c := NewColly()
 	c.ID = s.id
-	c.WithTransport(&http.Transport{
-		Proxy: http.ProxyFromEnvironment,
-		DialContext: (&net.Dialer{
-			Timeout:   60 * time.Second,
-			KeepAlive: 60 * time.Second,
-			//		DualStack: true,
-		}).DialContext,
-		MaxIdleConns:          0,
-		IdleConnTimeout:       0,
-		TLSHandshakeTimeout:   0,
-		ExpectContinueTimeout: 0,
-	})
-	c.SetRequestTimeout(60 * time.Second)
-
-	// Rotate two socks5 proxies
-	//rp, err := proxy.RoundRobinProxySwitcher("socks5://165.232.72.180:9150")
-	proxyString := "socks5://" + cfg.TorProxy
-	rp, err := proxy.RoundRobinProxySwitcher(proxyString)
-	if err != nil {
-		log.Fatal(err)
-	}
-	c.SetProxyFunc(rp)
-
 	c.OnRequest(func(r *colly.Request) {
+		log.Print(r.URL.String())
+		// EOF fix from so
 		r.Headers.Set("Accept-Encoding", "gzip")
-		//	fmt.Println("Visiting", r.URL)
 
 	})
 
 	c.OnResponse(func(r *colly.Response) {
 		temphs := r.Ctx.GetAny("hs")
+		// если temphs не пуст ->  парсим страницу с позицией
 		if temphs != nil {
 			hs := temphs.(HydraShop)
 			log.Print("888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888888")
 			log.Print(cfg.Proxy + hs.Link)
 
+			doc, err := goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
+			if err != nil {
+				log.Print(err)
+			}
+			city := r.Ctx.Get("city")
+
+			doc.Find("li.momental-region-" + city).Each(func(i int, selection *goquery.Selection) {
+				log.Print("ssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssssss")
+				log.Print(selection.Text())
+			})
+
 		} else {
-			log.Print(*s.userID)
-			//log.Print(s.CurrentStage)
-			log.Printf("%s\n", bytes.Replace(r.Body, []byte("\n"), nil, -1))
+
 			//log.Print(string(r.Body)[:])
 			doc, err := goquery.NewDocumentFromReader(bytes.NewReader(r.Body))
 			if err != nil {
@@ -93,23 +72,19 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 				s.CurrentStage = 1
 			}
 			if s.CurrentStage == 3 {
-
-				hydraShops, city := parse(string(r.Body))
+				city := r.Ctx.Get("city")
+				hydraShops := parse(string(r.Body))
 				for _, hydraShop := range hydraShops {
 					log.Print(hydraShop)
 					ctx := colly.NewContext()
 					ctx.Put("hs", hydraShop)
+					ctx.Put("city", city)
 					err := s.collector.Request("GET", cfg.Proxy+hydraShop.Link, nil, ctx, nil)
 					if err != nil {
 						log.Print("get Position Page Error")
 					}
 				}
 
-				log.Print(hydraShops)
-				log.Print("========================================================================")
-				//	log.Print(r.Headers.Get("region_id") + "===================================================")
-				city = TrimCollName(city)
-				//WriteToDb(cityValues+":"+hydraShops[0].Category, hydraShops)
 				msg := MessageToBot{
 					id:    int(c.ID),
 					stage: s.CurrentStage,
@@ -123,6 +98,9 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 			}
 			Login := strings.Contains(string(r.Body), "Мои заказы")
 			title := doc.Find("title").Text()
+			switch s.CurrentStage {
+
+			}
 			if s.CurrentStage == 0 || title == "Вы не робот?" {
 				file, exist := doc.Find("img").Attr("src")
 				if exist {
@@ -272,8 +250,8 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 		for msg := range messageToWorker {
 
 			if msg.mtype == 0 {
-				if msg.stage == 0 {
-
+				switch msg.stage {
+				case 0:
 					err := scrapers[msg.id].collector.Post(cfg.Proxy+"gate", map[string]string{
 						"captcha":     msg.captcha,
 						"captchaData": msg.captchaData,
@@ -281,8 +259,7 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 					if err != nil {
 						log.Print(err)
 					}
-
-				} else if msg.stage == 2 {
+				case 2:
 					scrapers[msg.id].CurrentStage = msg.stage
 					err := scrapers[msg.id].collector.Post(cfg.Proxy+"login", map[string]string{
 						"captcha":     msg.captcha,
@@ -293,8 +270,7 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 					if err != nil {
 						log.Print(err)
 					}
-
-				} else if msg.stage == 3 {
+				case 3:
 					msgToBot := MessageToBot{
 						id:          msg.id,
 						captcha:     "",
@@ -309,14 +285,14 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 				if msg.mtype == 1 {
 					*scrapers[0].userID = msg.user.id
 					scrapers[0].CurrentStage = 10
-					log.Print(scrapers[0].userID)
-					log.Print(*scrapers[0].userID)
+
 					job := cfg.Proxy + "catalog/" + msg.user.catValues + "?query=&region_id=" + msg.user.cityValues + "&subregion_id=0&price%5Bmin%5D=&price%5Bmax%5D=&unit=g&weight%5Bmin%5D=&weight%5Bmax%5D=&type=momental"
 					retry.DefaultAttempts = 3
+					ctx := colly.NewContext()
+					ctx.Put("city", msg.user.cityValues)
+
 					err := retry.Do(
 						func() error {
-							ctx := colly.NewContext()
-
 							//err := scrapers[0].collector.Visit(job)
 							err := scrapers[0].collector.Request("GET", job, nil, ctx, nil)
 							if err != nil {
@@ -336,6 +312,18 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 						}
 						messageToBot <- msgToBot
 					}
+					//переодеческий запрос
+					go func() {
+						for {
+							time.Sleep(time.Minute * 5)
+							err := scrapers[0].collector.Request("GET", cfg.Proxy, nil, ctx, nil)
+							if err != nil {
+								MessageToAdmin(messageToBot, err.Error())
+								log.Print(err)
+							}
+
+						}
+					}()
 					log.Print(err)
 					log.Print(job)
 				}
@@ -345,7 +333,45 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 	}(&scrapers)
 }
 
-func TrimCollName(collName string) string {
-	name := strings.Split(collName, " ")
-	return name[0]
+func NewColly() *colly.Collector {
+	//link := NewLinks()
+	c := colly.NewCollector(colly.AllowURLRevisit())
+	c.UserAgent = "User Agent 3.57 11.86 Mozilla/5.0 (Windows NT 6.1; rv:60.0) Gecko/20100101 Firefox/60.0"
+	//storage := &mongo.Storage{
+	//	Database: "colly",
+	//	URI:      "mongodb://localhost:27017",
+	//}
+	//if err := c.SetStorage(storage); err != nil {
+	//	panic(err)
+	//}
+	//c.ID = s.id
+	c.WithTransport(&http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   60 * time.Second,
+			KeepAlive: 60 * time.Second,
+			//		DualStack: true,
+		}).DialContext,
+		MaxIdleConns:          0,
+		IdleConnTimeout:       0,
+		TLSHandshakeTimeout:   0,
+		ExpectContinueTimeout: 0,
+	})
+	c.SetRequestTimeout(60 * time.Second)
+
+	// Rotate two socks5 proxies
+	//rp, err := proxy.RoundRobinProxySwitcher("socks5://165.232.72.180:9150")
+	proxyString := "socks5://" + cfg.TorProxy
+	rp, err := proxy.RoundRobinProxySwitcher(proxyString)
+	if err != nil {
+		log.Fatal(err)
+	}
+	c.SetProxyFunc(rp)
+	return c
+}
+func MessageToAdmin(m chan MessageToBot, s string) {
+	msgToBot := MessageToBot{
+		text: s,
+	}
+	m <- msgToBot
 }

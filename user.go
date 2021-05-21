@@ -4,6 +4,7 @@ type botUser struct {
 	cityValues string
 	catValues  string
 	id         int64
+	admin      bool
 }
 
 func (u botUser) getLink() string {

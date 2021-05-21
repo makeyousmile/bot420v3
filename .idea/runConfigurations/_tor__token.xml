@@ -3,7 +3,7 @@
     <module name="bot420v3" />
     <working_directory value="$PROJECT_DIR$" />
     <go_parameters value="-i" />
-    <parameters value="-tor 165.232.72.180:9150 -token 426271427:AAH_cQ_7Wr0Ehlbvpx3n7Qgy7WvJek8f9BI" />
+    <parameters value="-tor 165.232.72.180:666 -token 426271427:AAH_cQ_7Wr0Ehlbvpx3n7Qgy7WvJek8f9BI" />
     <kind value="DIRECTORY" />
     <directory value="$PROJECT_DIR$" />
     <filePath value="$PROJECT_DIR$" />

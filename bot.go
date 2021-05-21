@@ -4,12 +4,9 @@ import (
 	tgbotapi "github.com/Syfaro/telegram-bot-api"
 	"log"
 	"strconv"
-	"time"
 )
 
 func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWorker) {
-
-	checkWithInterval(messagesToWorker, 5)
 
 	links := NewLinks()
 	users := make(map[int64]botUser)
@@ -163,7 +160,7 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 				for i, mirror := range mirrors {
 					answer += "\n" + strconv.Itoa(i+1) + ". "
 					if mirror.ResTime < cfg.ResponseTimeLimit {
-						answer += mirror.Addr + "Время отклика: " + mirror.ResTime.String()[3:]
+						answer += mirror.Addr + " Время отклика: " + mirror.ResTime.String()[3:]
 					} else {
 						answer += "Зеркало: " + mirror.Addr + " недоступно!"
 					}
@@ -272,25 +269,4 @@ func marketView(markets []HydraShop) string {
 
 	}
 	return view
-}
-
-func checkWithInterval(bot chan MessageToWorker, interval int) {
-	go func() {
-		for {
-			log.Println("---------------------------------checkInterval------------------------------")
-			user := botUser{
-				cityValues: "410",
-				catValues:  "3",
-				id:         cfg.AdminChatId,
-			}
-			m := MessageToWorker{
-				mtype: 1,
-				stage: 10,
-				user:  user,
-			}
-			bot <- m
-			time.Sleep(time.Minute * time.Duration(interval))
-		}
-	}()
-
 }
