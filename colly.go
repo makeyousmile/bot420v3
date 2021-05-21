@@ -79,10 +79,10 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 					ctx := colly.NewContext()
 					ctx.Put("hs", hydraShop)
 					ctx.Put("city", city)
-					err := s.collector.Request("GET", cfg.Proxy+hydraShop.Link, nil, ctx, nil)
-					if err != nil {
-						log.Print("get Position Page Error")
-					}
+					//err := s.collector.Request("GET", cfg.Proxy+hydraShop.Link, nil, ctx, nil)
+					//if err != nil {
+					//	log.Print("get Position Page Error")
+					//}
 				}
 
 				msg := MessageToBot{
