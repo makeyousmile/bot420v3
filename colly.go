@@ -72,13 +72,16 @@ func (s *Scraper) StartCollyWorker(messageToBot chan MessageToBot, messageToWork
 				s.CurrentStage = 1
 			}
 			if s.CurrentStage == 3 {
-				city := r.Ctx.Get("city")
 				hydraShops := parse(string(r.Body))
+				user := r.Ctx.GetAny("user").(botUser)
+				if user.admin {
+					return
+				}
 				for _, hydraShop := range hydraShops {
 					log.Print(hydraShop)
 					ctx := colly.NewContext()
 					ctx.Put("hs", hydraShop)
-					ctx.Put("city", city)
+					//	ctx.Put("city", city)
 					//err := s.collector.Request("GET", cfg.Proxy+hydraShop.Link, nil, ctx, nil)
 					//if err != nil {
 					//	log.Print("get Position Page Error")
@@ -289,7 +292,7 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 					job := cfg.Proxy + "catalog/" + msg.user.catValues + "?query=&region_id=" + msg.user.cityValues + "&subregion_id=0&price%5Bmin%5D=&price%5Bmax%5D=&unit=g&weight%5Bmin%5D=&weight%5Bmax%5D=&type=momental"
 					retry.DefaultAttempts = 3
 					ctx := colly.NewContext()
-					ctx.Put("city", msg.user.cityValues)
+					ctx.Put("user", msg.user)
 
 					err := retry.Do(
 						func() error {
@@ -315,7 +318,11 @@ func StartCollyWorkers(messageToBot chan MessageToBot, messageToWorker chan Mess
 					//переодеческий запрос
 					go func() {
 						for {
+							user := msg.user
+							user.admin = true
 							time.Sleep(time.Minute * 5)
+							ctx := colly.NewContext()
+							ctx.Put("user", user)
 							err := scrapers[0].collector.Request("GET", cfg.Proxy, nil, ctx, nil)
 							if err != nil {
 								MessageToAdmin(messageToBot, err.Error())
