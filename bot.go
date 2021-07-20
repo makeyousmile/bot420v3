@@ -160,7 +160,7 @@ func StartBot(messagesToBot chan MessageToBot, messagesToWorker chan MessageToWo
 				for i, mirror := range mirrors {
 					answer += "\n" + strconv.Itoa(i+1) + ". "
 					if mirror.ResTime < cfg.ResponseTimeLimit {
-						answer += mirror.Addr + " Время отклика: " + mirror.ResTime.String()[3:]
+						answer += mirror.Addr + " Время отклика: " + mirror.ResTime.String()[:3] + " сек"
 					} else {
 						answer += "Зеркало: " + mirror.Addr + " недоступно!"
 					}
